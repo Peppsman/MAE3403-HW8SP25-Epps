@@ -1,9 +1,12 @@
 #MAE 3403 HW8P2 Epps, Patrick
 #Copilet is good at dealing with fixing all my mistakes
 
-# Region: Imports
+# Region Imports
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QPushButton, QLineEdit, QLabel, QRadioButton, QWidget
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QPushButton, QLineEdit, QLabel, QRadioButton
+#Endregion
 
 # Region: Model
 class RankineModel:
@@ -46,18 +49,8 @@ class RankineView(QMainWindow):
     def initUI(self):
         """Set up the GUI layout."""
         self.setWindowTitle('Rankine Cycle Viewer')
+        self.resize(800, 600)  # Increased width for graph display
 
-        # Set initial window size
-        self.resize(600, 400)  # Width = 600px, Height = 400px
-
-        self.layout = QVBoxLayout()
-
-        # Add widgets...
-
-        """
-        Set up the GUI layout.
-        """
-        self.setWindowTitle('Rankine Cycle Viewer')
         self.layout = QVBoxLayout()
 
         # Inputs and buttons
@@ -68,6 +61,7 @@ class RankineView(QMainWindow):
         self.radio_SI = QRadioButton("SI Units")
         self.radio_English = QRadioButton("English Units")
         self.calculate_button = QPushButton("Calculate")
+        self.plot_button = QPushButton("Show Graph")
 
         # Labels for saturation properties
         self.label_sat_high = QLabel("Saturation High:")
@@ -86,10 +80,17 @@ class RankineView(QMainWindow):
         self.layout.addWidget(self.label_sat_high)
         self.layout.addWidget(self.label_sat_low)
         self.layout.addWidget(self.calculate_button)
+        self.layout.addWidget(self.plot_button)
 
-        central_widget = QLabel()
+        # Add graph
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.layout.addWidget(self.canvas)
+
+        central_widget = QWidget()
         central_widget.setLayout(self.layout)
         self.setCentralWidget(central_widget)
+
 
 # End of View
 
@@ -108,6 +109,23 @@ class RankineController:
         self.view.P_low_input.editingFinished.connect(self.updateSaturationProperties)
         self.view.radio_SI.clicked.connect(self.updateUnits)
         self.view.radio_English.clicked.connect(self.updateUnits)
+        self.view.plot_button.clicked.connect(self.plotGraph)
+
+    def plotGraph(self):
+        """Plots a graph of the pressure-temperature relationship."""
+        pressures = np.linspace(0.1, 5, 50)  # Example pressures in MPa
+        temperatures = [self.model.getSaturationTemperature(p) for p in pressures]
+
+        # Clear the plot and redraw
+        self.view.figure.clear()
+        ax = self.view.figure.add_subplot(111)
+        ax.plot(pressures, temperatures, label="Sat. Temp vs Pressure")
+        ax.set_title("Pressure-Temperature Graph")
+        ax.set_xlabel("Pressure (MPa)")
+        ax.set_ylabel("Temperature (°C)")
+        ax.legend()
+        self.view.canvas.draw()
+
 
     # Region: Update Turbine Inlet Temperature
     def updateTurbineInlet(self):
